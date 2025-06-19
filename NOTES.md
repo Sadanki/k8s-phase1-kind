@@ -1,207 +1,102 @@
+Great! I'll now create `NOTES.md` files tailored for Kind (Kubernetes IN Docker) for both:
+
+1. ✅ `k8s-phase1-kind`
+2. ✅ `k8s-phase2-kind`
+
+These will be adapted versions of the Minikube notes, but with **Kind-specific context**, including cluster setup and Docker image loading.
 
 ---
 
-# 📘 Kubernetes Phase 1 – Full Learning Notes & Cheat Sheet
+## 📒 `k8s-phase1-kind/NOTES.md`
 
-This project introduces the core Kubernetes concepts using an Nginx application. It helps you learn real-world configuration using:
+````markdown
+# 🚀 Kubernetes Phase 1 – Kind (Kubernetes IN Docker)
 
-✅ Pods
-✅ Deployments
-✅ Services
-✅ Namespaces
-✅ ConfigMaps
-✅ Secrets
-✅ Custom HTML via Volume Mount
-✅ BusyBox + Env Vars
+This phase introduces the **core Kubernetes objects**, now deployed using **Kind (Kubernetes in Docker)**.
 
 ---
 
-## 📁 Project Files & Their Purpose
+## 🔰 What is Kind?
 
-| File                  | Purpose                                                                  |
-| --------------------- | ------------------------------------------------------------------------ |
-| `deployment.yaml`     | Deploys the Nginx container with 3 replicas                              |
-| `service.yaml`        | Exposes the Nginx pods using NodePort                                    |
-| `env-deployment.yaml` | Deploys BusyBox container using environment variables from config+secret |
-| `index.html`          | Custom HTML page mounted into Nginx pod using ConfigMap                  |
-| `README.md`           | Project guide                                                            |
-| `NOTES.md`            | Beginner-level explanations and commands                                 |
-| `screenshot.png`      | Output screenshot (optional)                                             |
+Kind creates Kubernetes clusters using Docker containers. It’s ideal for local development and CI pipelines.
 
 ---
 
-## 🔹 Kubernetes Concepts in the Project
+## 📦 Core Concepts Covered
 
-### 1️⃣ **Deployment**
-
-* A `Deployment` ensures that the desired number of Pods are always running.
-* You used it to:
-
-  * Deploy `nginx` with 3 replicas
-  * Deploy `busybox` with injected environment variables
-
-🧠 In `deployment.yaml`:
-
-```yaml
-replicas: 3       # Run 3 instances of nginx
-image: nginx      # Use the nginx container image
-```
+| Concept        | YAML File           | Description                                   |
+|----------------|---------------------|-----------------------------------------------|
+| Deployment     | `hello-deployment.yaml`, `test-deployment.yaml` | Deploys stateless pods using `nginx` image    |
+| Service        | `hello-service.yaml`, `test-service.yaml`       | Exposes the applications using NodePort       |
+| Namespace      | `ns.yaml`           | Creates logical separation                    |
+| ConfigMap      | `configmap.yaml`    | Passes env variables to pods                  |
+| Secret         | `secret.yaml`       | Stores sensitive data (like passwords)        |
+| Index.html     | `index.html`        | Custom web page served using Nginx            |
 
 ---
 
-### 2️⃣ **Service**
+## 🛠️ Setting up Kind
 
-* A `Service` exposes a set of Pods.
-* You used a `NodePort` service so it’s accessible from outside Minikube.
-
-🧠 In `service.yaml`:
-
-```yaml
-type: NodePort       # Exposes the service on a static port
-targetPort: 80       # Port inside the pod
-port: 80             # Internal cluster port
-```
-
-Use this command to open in browser:
+### 1️⃣ Create the Cluster
 
 ```bash
-minikube service hello-service
-```
+kind create cluster --name k8s-phase-demo
+````
 
----
-
-### 3️⃣ **ConfigMap**
-
-* Stores **non-sensitive** data like welcome messages, app titles, etc.
-* Injected into containers as environment variables or mounted as files.
-
-🧠 Used in `env-deployment.yaml`:
-
-```yaml
-env:
-  - name: WELCOME_MSG
-    valueFrom:
-      configMapKeyRef:
-        name: app-config
-        key: WELCOME_MSG
-```
-
-📦 Create with:
+### 2️⃣ Use the Cluster
 
 ```bash
-kubectl create configmap app-config --from-literal=WELCOME_MSG="Hello"
+kubectl cluster-info --context kind-k8s-phase-demo
 ```
 
 ---
 
-### 4️⃣ **Secret**
+## 🐳 Build and Load Docker Image
 
-* Stores **sensitive** data (e.g., passwords).
-* Injected like ConfigMaps but encoded.
-
-🧠 In `env-deployment.yaml`:
-
-```yaml
-- name: DB_PASSWORD
-  valueFrom:
-    secretKeyRef:
-      name: app-secret
-      key: DB_PASSWORD
-```
-
-📦 Create with:
+Since Kind runs in Docker, **you must load images** into the Kind node:
 
 ```bash
-kubectl create secret generic app-secret --from-literal=DB_PASSWORD="mypassword"
+# Inside your project (with Dockerfile + index.html)
+docker build -t custom-nginx:v1 .
+kind load docker-image custom-nginx:v1 --name k8s-phase-demo
 ```
 
 ---
 
-### 5️⃣ **Environment Variables Injection**
-
-You used a `busybox` pod that runs:
+## 🚀 Deploy Everything
 
 ```bash
-sh -c "echo Welcome: $WELCOME_MSG && echo DB Pass: $DB_PASSWORD && sleep 3600"
+kubectl apply -f ns.yaml
+kubectl apply -f configmap.yaml
+kubectl apply -f secret.yaml
+kubectl apply -f hello-deployment.yaml
+kubectl apply -f test-deployment.yaml
+kubectl apply -f hello-service.yaml
+kubectl apply -f test-service.yaml
 ```
-
-This demonstrates:
-
-* How to inject external values into containers
-* How ConfigMaps & Secrets integrate with deployments
 
 ---
 
-### 6️⃣ **Volume Mount (index.html)**
+## 🌐 Access the Service
 
-* Your `index.html` is mounted into the Nginx container to replace the default page.
-
-```yaml
-volumeMounts:
-  - name: html
-    mountPath: /usr/share/nginx/html/index.html
-    subPath: index.html
-volumes:
-  - name: html
-    configMap:
-      name: nginx-html
-```
-
-📦 Create the ConfigMap:
+Since Kind doesn’t expose services to localhost directly, use:
 
 ```bash
-kubectl create configmap nginx-html --from-file=index.html
+kubectl port-forward svc/hello-service 8080:80
 ```
+
+Then access:
+👉 [http://localhost:8080](http://localhost:8080)
 
 ---
 
-### 7️⃣ **Namespace: `demo`**
+## ✅ Checklist
 
-* Kubernetes lets you isolate resources in namespaces like `demo` and `default`.
-* In `env-deployment.yaml`, you used:
-
-```yaml
-namespace: demo
-```
-
-📦 Create namespace:
-
-```bash
-kubectl create namespace demo
-```
-
-Apply YAML to namespace:
-
-```bash
-kubectl apply -f env-deployment.yaml -n demo
-```
+* [x] Created Kind cluster
+* [x] Loaded Docker image into Kind
+* [x] Applied Deployments and Services
+* [x] Verified access via port-forward
 
 ---
 
-### 8️⃣ **kubectl Commands Used**
-
-```bash
-kubectl apply -f deployment.yaml       # Apply Nginx deployment
-kubectl apply -f service.yaml          # Expose the Nginx service
-kubectl apply -f env-deployment.yaml   # Deploy BusyBox with env vars
-kubectl get pods                       # View running pods
-kubectl logs <pod-name>                # View pod logs
-kubectl get svc                        # View services
-kubectl delete -f deployment.yaml      # Clean up deployment
-kubectl delete -f service.yaml         # Clean up service
-```
-
----
-
-## 🧠 Summary of What You Learned in Phase 1
-
-✅ Deploying containers to Kubernetes
-✅ Making your app accessible using NodePort
-✅ Injecting environment variables using ConfigMap and Secret
-✅ Mounting files like `index.html` via ConfigMap
-✅ Working in multiple namespaces
-✅ Viewing pod logs to verify output
-✅ Using busybox to simulate real apps
-✅ Using `kubectl` to manage your cluster
-
----
+````
