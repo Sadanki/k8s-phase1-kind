@@ -10,4 +10,4 @@ spec:
     - protocol: TCP   # Network protocol
       port: 80        # Service port (cluster-internal)
       targetPort: 80  # Pod port where traffic is sent
-      nodePort: 30001 # Port exposed on each Node
+      

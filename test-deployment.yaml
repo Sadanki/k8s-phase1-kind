@@ -1,0 +1,19 @@
+apiVersion: apps/v1        # Kubernetes API version
+kind: Deployment          # Type of resource
+metadata:
+  name: test-deployment   # Unique name for this deployment
+spec:
+  replicas: 1             # Number of pod copies (instances)
+  selector:
+    matchLabels:
+      app: test           # How Deployment finds Pods to manage
+  template:               # Pod template blueprint
+    metadata:
+      labels:
+        app: test         # Labels applied to created Pods
+    spec:
+      containers:
+      - name: nginx       # Container name
+        image: nginx      # Docker image
+        ports:
+        - containerPort: 80  # Port the container exposes

@@ -1,0 +1,68 @@
+# API version for Deployment resource (apps/v1 is stable version)
+apiVersion: apps/v1
+
+# Type of Kubernetes resource we're creating
+kind: Deployment
+
+# Metadata section - identifies the resource
+metadata:
+  # Name of this Deployment (must be unique in the namespace)
+  name: env-demo
+  
+  # Namespace where this will be deployed (isolated environment)
+  namespace: demo 
+
+# Specification of the desired state
+spec:
+  # Number of identical Pods to maintain (scaling)
+  replicas: 1
+
+  # Label selector to identify managed Pods
+  selector:
+    matchLabels:
+      # Pods with this label will be managed by this Deployment
+      app: env-demo
+
+  # Template for creating new Pods
+  template:
+    # Pod metadata
+    metadata:
+      # Labels applied to Pods (must match selector)
+      labels:
+        app: env-demo
+    
+    # Pod specification
+    spec:
+      # List of containers in the Pod
+      containers:
+      - # Container name (unique within the Pod)
+        name: demo-container
+        
+        # Lightweight Linux image for testing
+        image: busybox
+        
+        # Command to run when container starts
+        command: ["sh", "-c", "echo Welcome: $WELCOME_MSG && echo DB Pass: $DB_PASSWORD && sleep 3600"]
+        
+        # Environment variables for the container
+        env:
+        
+        # First environment variable: WELCOME_MSG
+        - name: WELCOME_MSG
+          # Value comes from a ConfigMap
+          valueFrom:
+            configMapKeyRef:
+              # Name of the ConfigMap
+              name: app-config
+              # Specific key in the ConfigMap
+              key: WELCOME_MSG
+        
+        # Second environment variable: DB_PASSWORD  
+        - name: DB_PASSWORD
+          # Value comes from a Secret
+          valueFrom:
+            secretKeyRef:
+              # Name of the Secret
+              name: app-secret
+              # Specific key in the Secret
+              key: DB_PASSWORD

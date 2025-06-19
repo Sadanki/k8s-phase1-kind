@@ -3,7 +3,7 @@ kind: Deployment     # The type of Kubernetes resource
 metadata:            # Identifying information
   name: hello-deployment  # Name of your deployment
 spec:                # Desired state of the deployment
-  replicas: 1        # Number of pod replicas to maintain
+  replicas: 3        # Number of pod replicas to maintain
   selector:          # How the Deployment finds Pods to manage
     matchLabels:
       app: hello     # Label selector that matches the Pod template
@@ -17,3 +17,11 @@ spec:                # Desired state of the deployment
         image: nginx:latest  # Container image
         ports:
         - containerPort: 80  # Port the container exposes
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+      volumes:
+      - name: html
+        configMap:
+          name: nginx-html
