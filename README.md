@@ -1,5 +1,3 @@
----
-
 ```markdown
 # 🚀 Kubernetes Hello World Project
 
